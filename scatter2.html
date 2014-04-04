@@ -1,0 +1,226 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Untitled Document</title>
+
+</head>
+
+<body>
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+body {
+  font: 10px sans-serif
+  color:#FF0000;
+}
+
+button {
+	position:absolute;
+	left:430px;
+	top:520px;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.dot {
+  stroke: #FF0000;
+}
+
+.hoog{
+	fill:#ff0000;
+}
+
+</style>
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+
+<script>
+
+var hoog= [];
+var laag=[];
+
+var xdata = [];
+var ydata = [];
+var labels = [];
+
+function fetch_data() {
+  return $.ajax({
+   url: 'http://student:hello@umcu-bioinf.is-not-certified.com/test/_design/all/_view/all',
+   type: 'GET',
+   dataType: 'jsonp',
+   cache: false,
+   crossDomain: true,
+   }).done( function(data) {
+     console.log(data);
+     console.log("First normal ",data.rows[0].value.normal);
+   console.log("First tumor ",data.rows[0].value.tumor)
+     for (i in data.rows) {
+       // console.log(i,"normal: ",data.rows[i].value.normal);
+       xdata.push(data.rows[i].value.tumor);
+       ydata.push(data.rows[i].value.normal);
+       labels.push(data.rows[i]._id);
+     }
+     // console.log(xdata);
+})};
+
+
+// Global initialisations
+
+var margin = {top: 20, right: 20, bottom: 30, left: 40},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var x = d3.scale.linear()
+    .range([0, width]);
+
+var y = d3.scale.linear()
+    .range([height, 0]);
+
+var color = d3.scale.category10();
+
+// the chart object, includes all margins
+var chart = d3.select('body')
+  .append('svg:svg')
+  .attr('width', width + margin.right + margin.left)
+  .attr('height', height + margin.top + margin.bottom)
+  .attr('class', 'chart')
+
+// the main object where the chart and axis will be drawn
+var main = chart.append('g')
+  .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+  .attr('width', width)
+  .attr('height', height)
+  .attr('class', 'main') ;
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("top");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("right");
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+xdata.length = 0;
+ydata.length = 0;
+
+var rescale = function() {
+  x = d3.scale.linear()
+            .domain([0, d3.max(xdata)]) // the range of the values to plot
+            .range([ 0, width ]); // the pixel range of the x-axis
+
+  y = d3.scale.linear()
+            .domain([0, d3.max(ydata)])
+            .range([ height, 0 ]);
+
+  // redraw the x axis
+  var xAxis = d3.svg.axis()
+    .scale(x)
+	.ticks(20)
+    .orient('bottom');
+
+  main.append('g')
+  .attr('transform', 'translate(0,' + height + ')')
+  .attr('class', 'main axis date')
+  .style({ 'stroke': 'Black', 'fill': 'none', 'stroke-width': '1px'})
+  .call(xAxis);
+
+  // redraw the y axis
+  var yAxis = d3.svg.axis()
+  .scale(y)
+  .orient('right');
+
+  main.append('g')
+    .attr('transform', 'translate(-30,0)')
+    .attr('class', 'main axis date')
+    .style({ 'stroke': 'Black', 'fill': 'none', 'stroke-width': '1px'})
+    .call(yAxis);
+}
+
+var refresh = function() {
+
+ //Create Title
+  main.append("text")
+    .attr("x", width / 2 )
+    .attr("y", 0)
+    .style("text-anchor", "middle")
+    .text("Tumor Normal scatter plot");
+
+console.log(xdata[2].valueOf());
+
+
+var kleur;
+if(xdata[i].valueOf()>50){
+	kleur= "green";
+}
+else{
+	kleur="red";
+}
+
+
+
+
+
+  var dots = g.selectAll("scatter-dots")
+    .data(ydata) // using the values in the ydata array
+    .enter().append("svg:circle") // create a new circle for each value
+        .attr("cy", function (d) { return y(d); } ) // translate y value to a pixel
+        .attr("cx", function (d,i) { return x(xdata[i]); } ) // translate x value
+        .attr("r", 4) // radius of circle
+        .attr("fill", kleur)
+        .append("svg:title")
+        .style("opacity", 0.6); // opacity of circle
+        // .text(function(d,i) { return labels[i]; })
+}
+var g = main.append("svg:g");
+
+$.when( fetch_data() )
+  .then( function() {
+    console.log('Total tumor-normal pairs: ',xdata.length) ;
+    rescale();
+    refresh()
+  } );
+
+
+function median(values) {
+
+    values.sort( function(a,b) {return a - b;} );
+
+    var half = Math.floor(values.length/2);
+
+    if(values.length % 2)
+        return values[half];
+    else
+        return (values[half-1] + values[half]) / 2.0;
+}
+
+
+function myFunction(){
+document.write("Max tumor:",Math.max(xdata[i]),"<br/>");
+document.write("Max normal:",Math.max(ydata[i]),"<br/>");
+document.write("Min tumor:",Math.min(xdata[i]),"<br/>");
+document.write("Min normal:",Math.min(ydata[i]),"<br/>");
+document.write("Median normal:",median(xdata),"<br/>");
+document.write("Median tumor:",median(ydata),"<br/>");
+	document.write("Total tumor-normal pairs: ",xdata.length,"<br/>");
+	document.write("<button onclick='javascript:history.back()'>Back to scatter plot</button>");
+}
+</script>
+
+</body>
+<br/>
+<button onclick="myFunction()" >Max, min and total</button>
+</html>
